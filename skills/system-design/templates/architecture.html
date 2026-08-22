@@ -1,0 +1,402 @@
+<!-- ARCHITECTURE DOC — self-contained, never scrolls, tabbed.
+     Keep only the tabs this system needs; delete the rest AND their nav button.
+     Shapes and colours are fixed. Do not invent new ones. -->
+<meta charset="utf-8">
+<title>Architecture — SYSTEM NAME</title>
+<style>
+:root{
+  --o:#E86329; --ink:#1A1A2E; --wash:#FFF3EE; --grey:#8a8f98; --line:#d8dce1;
+  --bl:#2b5fa8; --bl-bg:#eef3fb; --gr:#1f7a4d; --gr-bg:#eaf5ef;
+  --wa:#a5780e; --wa-bg:#fdf5e3; --ext-bg:#f2f3f5; --paper:#fff;
+  --sans:Arial,"Helvetica Neue",Helvetica,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%;overflow:hidden;margin:0}
+body{font-family:var(--sans);color:var(--ink);background:var(--paper);display:flex;flex-direction:column}
+header{display:flex;align-items:center;gap:16px;padding:9px 24px;border-bottom:1px solid var(--line);flex:none}
+header .logo{font-size:13px;font-weight:bold}
+header .logo i{color:var(--o);font-style:normal}
+header .meta{font-size:11.5px;color:var(--grey);font-family:var(--mono);margin-left:auto}
+nav{display:flex;gap:2px;padding:0 20px;border-bottom:1px solid var(--line);flex:none}
+nav button{font:bold 13px var(--sans);border:0;background:none;color:var(--grey);
+  padding:9px 13px;cursor:pointer;border-bottom:2px solid transparent}
+nav button:hover{color:var(--ink)}
+nav button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--o)}
+main{flex:1;min-height:0;position:relative}
+section{position:absolute;inset:0;padding:16px 24px 20px;overflow:hidden;display:none;flex-direction:column;gap:12px}
+section[data-open]{display:flex}
+h2{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--grey);margin:0}
+h2 b{color:var(--o)}
+.frame{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+svg{max-width:100%;max-height:100%}
+.legend{display:flex;gap:16px;font-size:11px;color:var(--grey);flex:none;align-items:center;flex-wrap:wrap}
+.legend svg{height:15px;width:auto;vertical-align:-3px;margin-right:3px}
+.cols{flex:1;min-height:0;display:grid;gap:22px}
+.c2{grid-template-columns:1fr 1fr} .c32{grid-template-columns:2fr 1fr}
+table{border-collapse:collapse;font-size:12.5px;width:100%}
+th{text-align:left;font:bold 10.5px var(--sans);text-transform:uppercase;letter-spacing:.07em;
+  color:var(--grey);padding:0 10px 5px 0;border-bottom:1.5px solid var(--ink)}
+td{padding:6px 10px 6px 0;border-bottom:1px solid var(--line);vertical-align:top}
+code{font:11.5px var(--mono);background:var(--wash);padding:1px 5px;border-radius:3px;color:var(--ink)}
+.m{font-family:var(--mono);font-size:11px;font-weight:bold;padding:1px 6px;border-radius:3px;color:#fff}
+.get{background:var(--gr)} .post{background:var(--o)} .del{background:#b3261e} .evt{background:var(--bl)}
+.vs{font-size:13px;line-height:1.55}
+.vs .opt{border-left:3px solid var(--line);padding:2px 0 2px 13px;margin-bottom:14px}
+.vs .opt.win{border-left-color:var(--o)}
+.vs .opt h3{font-size:13.5px;margin:0 0 3px}
+.vs .opt h3 span{font:bold 10px var(--sans);color:var(--o);letter-spacing:.08em;margin-left:7px}
+.vs .opt p{margin:0;color:var(--grey);font-size:12.5px}
+.vs .opt p b{color:var(--ink)}
+/* ── SVG: fixed visual language ───────────────────────────── */
+.svc  {fill:var(--bl-bg); stroke:var(--bl); stroke-width:1.5}
+.store{fill:var(--gr-bg); stroke:var(--gr); stroke-width:1.5}
+.queue{fill:var(--wa-bg); stroke:var(--wa); stroke-width:1.5}
+.ext  {fill:var(--ext-bg);stroke:var(--grey);stroke-width:1.5;stroke-dasharray:5 3}
+.actor{fill:var(--wash); stroke:var(--ink); stroke-width:1.5}
+.dec  {fill:var(--wash); stroke:var(--o);   stroke-width:1.5}
+.t    {font:bold 12.5px var(--sans);fill:var(--ink);text-anchor:middle}
+.tech {font:10px var(--mono);fill:var(--grey);text-anchor:middle}
+.desc {font:11px var(--sans);fill:var(--grey);text-anchor:middle}
+.flow {stroke:var(--ink);stroke-width:1.4;fill:none;marker-end:url(#ar)}
+.flowa{stroke:var(--o); stroke-width:1.4;fill:none;stroke-dasharray:6 4;marker-end:url(#aro)}
+.ret  {stroke:var(--grey);stroke-width:1.2;fill:none;stroke-dasharray:4 3;marker-end:url(#arg)}
+.life {stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 4}
+.act  {fill:var(--wash);stroke:var(--o);stroke-width:1.2}
+.chip {fill:var(--paper)}
+.edge {font:10.5px var(--mono);fill:var(--ink);text-anchor:middle;dominant-baseline:middle}
+.ent  {fill:var(--paper);stroke:var(--ink);stroke-width:1.4}
+.enth {fill:var(--ink)}
+.entt {font:bold 11.5px var(--sans);fill:var(--paper);text-anchor:middle;dominant-baseline:middle}
+.col  {font:11px var(--mono);fill:var(--ink);dominant-baseline:middle}
+.colk {font:bold 11px var(--mono);fill:var(--o);dominant-baseline:middle}
+.rel  {stroke:var(--ink);stroke-width:1.3;fill:none}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){
+  --ink:#eceef2;--paper:#15161b;--wash:#2a201b;--line:#33383f;--grey:#9aa0a6;
+  --bl-bg:#182740;--gr-bg:#13301f;--wa-bg:#332813;--ext-bg:#22252a}}
+</style>
+
+<header>
+  <span class="logo">◆ <i>Arquitectura</i> · SYSTEM NAME</span>
+  <span class="meta">YYYY-MM-DD</span>
+</header>
+
+<nav>
+  <button aria-selected="true" data-t="map">Mapa</button>
+  <button data-t="flow">Flujo</button>
+  <button data-t="logic">Decisiones</button>
+  <button data-t="data">Datos</button>
+  <button data-t="api">Contratos</button>
+  <button data-t="trade">Trade-offs</button>
+</nav>
+
+<main>
+
+<!-- ═══════════ MAPA — C4 container diagram ═══════════ -->
+<section data-t="map" data-open>
+  <div class="legend">
+    <span><svg viewBox="0 0 22 15"><rect class="svc" x="1" y="1" width="20" height="13" rx="3"/></svg>servicio</span>
+    <span><svg viewBox="0 0 22 15"><path class="store" d="M2 4v7a9 4 0 0 0 18 0V4"/><ellipse class="store" cx="11" cy="4" rx="9" ry="3"/></svg>datos</span>
+    <span><svg viewBox="0 0 22 15"><rect class="queue" x="1" y="3" width="20" height="9"/><path class="queue" d="M8 3v9M14 3v9"/></svg>cola</span>
+    <span><svg viewBox="0 0 22 15"><rect class="ext" x="1" y="1" width="20" height="13" rx="3"/></svg>tercero</span>
+    <span><svg viewBox="0 0 30 8"><path class="flow" d="M1 4h22"/></svg>síncrono</span>
+    <span style="color:var(--o)"><svg viewBox="0 0 30 8"><path class="flowa" d="M1 4h22"/></svg>asíncrono</span>
+  </div>
+  <div class="frame">
+    <svg viewBox="0 0 880 400">
+      <defs>
+        <marker id="ar"  viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 8 4 0 8z" fill="var(--ink)"/></marker>
+        <marker id="aro" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 8 4 0 8z" fill="var(--o)"/></marker>
+        <marker id="arg" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 8 4 0 8z" fill="var(--grey)"/></marker>
+      </defs>
+
+      <!-- actor -->
+      <rect class="actor" x="20" y="160" width="118" height="70" rx="35"/>
+      <text class="t"    x="79" y="187">Cliente</text>
+      <text class="tech" x="79" y="203">[React]</text>
+      <text class="desc" x="79" y="219">usuario final</text>
+
+      <!-- service -->
+      <rect class="svc"  x="240" y="152" width="150" height="86" rx="4"/>
+      <text class="t"    x="315" y="178">API</text>
+      <text class="tech" x="315" y="194">[Hono · Node]</text>
+      <text class="desc" x="315" y="212">valida, autoriza</text>
+      <text class="desc" x="315" y="226">y responde</text>
+
+      <!-- datastore: cylinder -->
+      <path class="store" d="M560 44v76a45 14 0 0 0 90 0V44"/>
+      <ellipse class="store" cx="605" cy="44" rx="45" ry="14"/>
+      <text class="t"    x="605" y="80">Postgres</text>
+      <text class="tech" x="605" y="96">[fuente de verdad]</text>
+
+      <!-- queue -->
+      <rect class="queue" x="545" y="168" width="120" height="54"/>
+      <path class="queue" d="M585 168v54M625 168v54"/>
+      <text class="t"    x="605" y="192">Cola</text>
+      <text class="tech" x="605" y="208">[+ DLQ]</text>
+
+      <!-- worker -->
+      <rect class="svc"  x="530" y="286" width="150" height="76" rx="4"/>
+      <text class="t"    x="605" y="312">Worker</text>
+      <text class="tech" x="605" y="328">[Node]</text>
+      <text class="desc" x="605" y="346">idempotente</text>
+
+      <!-- external -->
+      <rect class="ext"  x="750" y="286" width="112" height="76" rx="4"/>
+      <text class="t"    x="806" y="316">Tercero</text>
+      <text class="desc" x="806" y="334">rate-limited</text>
+
+      <!-- ── orthogonal routing. Labels sit on a paper chip so nothing overlaps ── -->
+      <path class="flow"  d="M138 195 H240"/>
+      <rect class="chip" x="150" y="180" width="76" height="15"/>
+      <text class="edge" x="188" y="188">HTTPS</text>
+
+      <path class="flow"  d="M390 178 H470 V44 H560"/>
+      <rect class="chip" x="480" y="37" width="72" height="15"/>
+      <text class="edge" x="516" y="45">lee/escribe</text>
+
+      <path class="flowa" d="M390 212 H470 V195 H545"/>
+      <rect class="chip" x="482" y="188" width="58" height="15"/>
+      <text class="edge" x="511" y="196">encola</text>
+
+      <path class="flowa" d="M605 222 V286"/>
+      <rect class="chip" x="612" y="247" width="56" height="15"/>
+      <text class="edge" x="640" y="255">consume</text>
+
+      <path class="flow"  d="M680 324 H750"/>
+      <rect class="chip" x="686" y="309" width="60" height="15"/>
+      <text class="edge" x="716" y="317">throttle</text>
+
+      <path class="flow"  d="M605 286 V250 H700 V120 H650"/>
+      <rect class="chip" x="666" y="176" width="70" height="15"/>
+      <text class="edge" x="701" y="184">confirma</text>
+    </svg>
+  </div>
+</section>
+
+<!-- ═══════════ FLUJO — sequence diagram ═══════════ -->
+<section data-t="flow">
+  <h2>Flujo · <b>nombre del caso</b></h2>
+  <div class="frame">
+    <svg viewBox="0 0 880 380">
+      <!-- lifeline heads -->
+      <g>
+        <rect class="actor" x="20"  y="10" width="110" height="34" rx="17"/><text class="t" x="75"  y="32">Cliente</text>
+        <rect class="svc"   x="215" y="10" width="110" height="34" rx="4"/> <text class="t" x="270" y="32">API</text>
+        <path class="store" d="M425 22v14a45 10 0 0 0 90 0V22"/><ellipse class="store" cx="470" cy="22" rx="45" ry="10"/><text class="t" x="470" y="44" style="fill:var(--ink)">Postgres</text>
+        <rect class="queue" x="600" y="10" width="110" height="34"/><path class="queue" d="M637 10v34M673 10v34"/><text class="t" x="655" y="32">Cola</text>
+        <rect class="ext"   x="770" y="10" width="100" height="34" rx="4"/><text class="t" x="820" y="32">Tercero</text>
+      </g>
+      <!-- lifelines -->
+      <path class="life" d="M75 58V370M270 58V370M470 60V370M655 58V370M820 58V370"/>
+      <!-- activation bars -->
+      <rect class="act" x="264" y="80"  width="12" height="180"/>
+      <rect class="act" x="649" y="185" width="12" height="120"/>
+
+      <path class="flow" d="M75 92 H262"/>
+      <rect class="chip" x="110" y="76" width="126" height="15"/>
+      <text class="edge" x="173" y="84">POST /booking</text>
+
+      <path class="flow" d="M276 130 H468"/>
+      <rect class="chip" x="300" y="114" width="140" height="15"/>
+      <text class="edge" x="370" y="122">BEGIN · insert · COMMIT</text>
+
+      <path class="ret"  d="M468 158 H278"/>
+      <rect class="chip" x="320" y="142" width="96" height="15"/>
+      <text class="edge" x="368" y="150" style="fill:var(--grey)">booking_id</text>
+
+      <path class="flowa" d="M276 196 H647"/>
+      <rect class="chip" x="380" y="180" width="182" height="15"/>
+      <text class="edge" x="471" y="188">enqueue(idempotency_key)</text>
+
+      <path class="ret"  d="M262 232 H78"/>
+      <rect class="chip" x="110" y="216" width="120" height="15"/>
+      <text class="edge" x="170" y="224" style="fill:var(--grey)">202 Accepted</text>
+
+      <path class="flow" d="M661 268 H818"/>
+      <rect class="chip" x="690" y="252" width="104" height="15"/>
+      <text class="edge" x="742" y="260">sync externo</text>
+
+      <path class="ret"  d="M818 300 H663"/>
+      <rect class="chip" x="700" y="284" width="84" height="15"/>
+      <text class="edge" x="742" y="292" style="fill:var(--grey)">200 · ACK</text>
+
+      <text class="desc" x="440" y="352" style="fill:var(--o)">Si no llega el ACK, el mensaje vuelve a la cola. Por eso el worker es idempotente.</text>
+    </svg>
+  </div>
+</section>
+
+<!-- ═══════════ DECISIONES — flowchart with diamonds ═══════════ -->
+<section data-t="logic">
+  <h2>Lógica · <b>nombre de la decisión</b></h2>
+  <div class="frame">
+    <svg viewBox="0 0 880 360">
+      <rect class="svc" x="30" y="150" width="130" height="50" rx="4"/>
+      <text class="t" x="95" y="180">Llega evento</text>
+
+      <path class="dec" d="M290 175 L370 130 L450 175 L370 220 Z"/>
+      <text class="t" x="370" y="172" style="font-size:11.5px">¿ya procesado?</text>
+      <text class="tech" x="370" y="187">idempotency_key</text>
+
+      <path class="dec" d="M540 175 L620 130 L700 175 L620 220 Z"/>
+      <text class="t" x="620" y="172" style="font-size:11.5px">¿tercero vivo?</text>
+      <text class="tech" x="620" y="187">circuit breaker</text>
+
+      <rect class="svc"   x="770" y="150" width="90" height="50" rx="4"/>
+      <text class="t" x="815" y="180">Ejecuta</text>
+      <rect class="queue" x="540" y="285" width="160" height="46"/>
+      <path class="queue" d="M593 285v46M647 285v46"/>
+      <text class="t" x="620" y="313">Reencola + backoff</text>
+      <rect class="ext"   x="290" y="285" width="160" height="46" rx="4"/>
+      <text class="t" x="370" y="313">Descarta</text>
+
+      <path class="flow" d="M160 175 H290"/>
+      <path class="flow" d="M450 175 H540"/>
+      <rect class="chip" x="465" y="159" width="46" height="15"/><text class="edge" x="488" y="167">no</text>
+      <path class="flow" d="M700 175 H770"/>
+      <rect class="chip" x="712" y="159" width="42" height="15"/><text class="edge" x="733" y="167">sí</text>
+      <path class="flow" d="M370 220 V285"/>
+      <rect class="chip" x="380" y="245" width="42" height="15"/><text class="edge" x="401" y="253">sí</text>
+      <path class="flow" d="M620 220 V285"/>
+      <rect class="chip" x="630" y="245" width="42" height="15"/><text class="edge" x="651" y="253">no</text>
+    </svg>
+  </div>
+</section>
+
+<!-- ═══════════ DATOS — entity relationship diagram ═══════════ -->
+<section data-t="data">
+  <div class="cols c32">
+    <div style="display:flex;flex-direction:column;gap:10px;min-height:0">
+      <h2>Modelo</h2>
+      <div class="frame">
+        <svg viewBox="0 0 560 330">
+          <!-- tenants -->
+          <rect class="ent"  x="20"  y="30" width="180" height="96" rx="3"/>
+          <rect class="enth" x="20"  y="30" width="180" height="26" rx="3"/>
+          <rect class="enth" x="20"  y="46" width="180" height="10"/>
+          <text class="entt" x="110" y="44">tenants</text>
+          <text class="colk" x="32"  y="72">PK  id</text>
+          <text class="col"  x="32"  y="92">    name</text>
+          <text class="col"  x="32"  y="112">    plan</text>
+
+          <!-- bookings -->
+          <rect class="ent"  x="300" y="30" width="200" height="136" rx="3"/>
+          <rect class="enth" x="300" y="30" width="200" height="26" rx="3"/>
+          <rect class="enth" x="300" y="46" width="200" height="10"/>
+          <text class="entt" x="400" y="44">bookings</text>
+          <text class="colk" x="312" y="72">PK  id</text>
+          <text class="colk" x="312" y="92">FK  tenant_id</text>
+          <text class="col"  x="312" y="112">    starts_at</text>
+          <text class="col"  x="312" y="132">    status</text>
+          <text class="colk" x="312" y="152">UQ  idem_key</text>
+
+          <!-- events -->
+          <rect class="ent"  x="300" y="200" width="200" height="96" rx="3"/>
+          <rect class="enth" x="300" y="200" width="200" height="26" rx="3"/>
+          <rect class="enth" x="300" y="216" width="200" height="10"/>
+          <text class="entt" x="400" y="214">outbox</text>
+          <text class="colk" x="312" y="242">PK  id</text>
+          <text class="colk" x="312" y="262">FK  booking_id</text>
+          <text class="col"  x="312" y="282">    sent_at</text>
+
+          <!-- relations, crow's foot -->
+          <path class="rel" d="M200 78 H250 V78 H300"/>
+          <path class="rel" d="M300 78 l-12 -7M300 78 l-12 7M288 78 h12"/>
+          <circle class="rel" cx="212" cy="78" r="4" fill="var(--paper)"/>
+          <rect class="chip" x="226" y="62" width="52" height="15"/>
+          <text class="edge" x="252" y="70">1 : N</text>
+
+          <path class="rel" d="M400 166 V200"/>
+          <path class="rel" d="M400 200 l-7 -12M400 200 l7 -12"/>
+          <rect class="chip" x="406" y="176" width="52" height="15"/>
+          <text class="edge" x="432" y="184">1 : N</text>
+        </svg>
+      </div>
+    </div>
+    <div>
+      <h2>Reglas</h2>
+      <table>
+        <tr><td><b>Aislamiento</b></td><td><code>tenant_id</code> primera columna de todo índice. RLS de red de seguridad</td></tr>
+        <tr><td><b>Idempotencia</b></td><td>Índice único en <code>idem_key</code>. La BBDD impide el duplicado</td></tr>
+        <tr><td><b>Ficheros</b></td><td>Fuera de la BBDD. Dentro solo la ruta</td></tr>
+        <tr><td><b>Retención</b></td><td>Qué se borra y cuándo</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ CONTRATOS ═══════════ -->
+<section data-t="api">
+  <div class="cols c2">
+    <div>
+      <h2>Endpoints</h2>
+      <table>
+        <tr><th>&nbsp;</th><th>Ruta</th><th>Requiere</th></tr>
+        <tr><td><span class="m get">GET</span></td><td><code>/v1/bookings</code></td><td>cursor, no offset</td></tr>
+        <tr><td><span class="m post">POST</span></td><td><code>/v1/bookings</code></td><td><code>Idempotency-Key</code></td></tr>
+        <tr><td><span class="m del">DEL</span></td><td><code>/v1/bookings/:id</code></td><td>idempotente por verbo</td></tr>
+      </table>
+      <h2 style="margin-top:16px">Errores</h2>
+      <table>
+        <tr><th>Código</th><th>Cuándo</th><th>¿Reintentar?</th></tr>
+        <tr><td><code>409</code></td><td>Slot ocupado</td><td>No</td></tr>
+        <tr><td><code>429</code></td><td>Rate limit</td><td>Sí, con <code>Retry-After</code></td></tr>
+        <tr><td><code>5xx</code></td><td>Fallo transitorio</td><td>Sí, backoff + jitter</td></tr>
+      </table>
+    </div>
+    <div>
+      <h2>Eventos</h2>
+      <table>
+        <tr><th>&nbsp;</th><th>Evento</th><th>Quién escucha</th></tr>
+        <tr><td><span class="m evt">OUT</span></td><td><code>booking.created</code></td><td>Worker · webhook HMAC</td></tr>
+        <tr><td><span class="m evt">IN</span></td><td><code>payment.succeeded</code></td><td>Firma verificada, &lt;1 s, se encola</td></tr>
+      </table>
+      <h2 style="margin-top:16px">Garantías</h2>
+      <table>
+        <tr><td><b>Entrega</b></td><td>at-least-once. Los duplicados son normales</td></tr>
+        <tr><td><b>Orden</b></td><td>Solo dentro de la misma clave de partición</td></tr>
+        <tr><td><b>Firma</b></td><td>HMAC en salida. Verificada en entrada</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ TRADE-OFFS ═══════════ -->
+<section data-t="trade">
+  <div class="cols c2">
+    <div class="vs">
+      <h2>La decisión</h2>
+      <div class="opt win" style="margin-top:10px">
+        <h3>Opción elegida<span>ELEGIDA</span></h3>
+        <p>Ganamos <b>qué</b>. Pagamos <b>qué</b>.</p>
+      </div>
+      <div class="opt">
+        <h3>Alternativa descartada</h3>
+        <p>Habría dado <b>qué</b>, a cambio de <b>qué</b>. Se descartó porque <b>motivo</b>.</p>
+      </div>
+      <div class="opt">
+        <h3>Otra alternativa</h3>
+        <p>…</p>
+      </div>
+    </div>
+    <div>
+      <h2>Qué rompe primero a 10×</h2>
+      <table>
+        <tr><th>Pieza</th><th>Límite</th><th>Qué haríamos</th></tr>
+        <tr><td>Tercero</td><td>60 req/min por cuenta</td><td>Throttle por tenant en la salida</td></tr>
+        <tr><td>Postgres</td><td>Escrituras en la primaria</td><td>Particionar por fecha antes que shardear</td></tr>
+        <tr><td></td><td></td><td></td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+const tabs=[...document.querySelectorAll('nav button')];
+tabs.forEach(b=>b.onclick=()=>{
+  tabs.forEach(x=>x.setAttribute('aria-selected',x===b));
+  document.querySelectorAll('section').forEach(s=>s.toggleAttribute('data-open',s.dataset.t===b.dataset.t));
+});
+</script>

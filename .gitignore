@@ -1,0 +1,12 @@
+*
+!.gitignore
+!CLAUDE.md
+!settings.json
+!rules/
+!rules/**
+!skills/
+!skills/**
+!agents/
+!agents/**
+!hooks/
+!hooks/**
